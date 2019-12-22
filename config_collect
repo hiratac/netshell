@@ -17,66 +17,67 @@ if [ -e ${HOSTS} ]; then
   if [ -n "$PING_CHECK" ]; then
     echo " ${IP} is stop." >> skip_${DATE}.csv
   else
-  if [ ${MODEL} = "yamaha" ]; then
-    ADMIN="administrator"
-    SHRUN="show config"
-    SHENV="show environment"
-    END="exit"
+  
+    if [ ${MODEL} = "yamaha" ]; then
+      ADMIN="administrator"
+      SHRUN="show config"
+      SHENV="show environment"
+      END="exit"
 
-    expect -c "
-    spawn telnet ${IP}
-    expect \"Username:\"
-    send \"${USERNAME}\n\"
-    expect \"Password:\"
-    send \"${PASSWORD}\n\"
-    expect \">\"
-    send \"${ADMIN}\n\"
-    expect \"Password:\"
-    send \"${PASSWORD}\n\"
-    expect \"#\"
-    send \"${SHRUN}\n\"
-    expect \"#\"
-    send \"${SHENV}\n\"
-    expect \"#\"
-    send \"${END}\n\" ; sleep 1
-    expect eof
-        " > ${IP}_${MODEL}_${DATE}.log
+      expect -c "
+      spawn telnet ${IP}
+      expect \"Username:\"
+      send \"${USERNAME}\n\"
+      expect \"Password:\"
+      send \"${PASSWORD}\n\"
+      expect \">\"
+      send \"${ADMIN}\n\"
+      expect \"Password:\"
+      send \"${PASSWORD}\n\"
+      expect \"#\"
+      send \"${SHRUN}\n\"
+      expect \"#\"
+      send \"${SHENV}\n\"
+      expect \"#\"
+      send \"${END}\n\" ; sleep 1
+      expect eof
+      " > ${IP}_${MODEL}_${DATE}.log
 
-  elif [ ${MODEL} = "alaxala" ]; then
-    EN="enable"
-    TERLEN="set terminal pager disable"
-    SHOWRUN="show running-config"
-    SHVER="show version"
-    SHSYS="show system"
-    END="exit"
+    elif [ ${MODEL} = "alaxala" ]; then
+      EN="enable"
+      TERLEN="set terminal pager disable"
+      SHOWRUN="show running-config"
+      SHVER="show version"
+      SHSYS="show system"
+      END="exit"
 
-    expect -c "
-    spawn telnet ${IP}
-    expect \"login:\"
-    send \"${USERNAME}\r\"
-    expect \"Password:\"
-    send \"${PASSWORD}\r\"
-    expect \">\"
-    send \"${EN}\r\"
-    expect \"Password:\"
-    send \"${ENABLE}\r\"
-    expect \"#\"
-    send \"${TERLEN}\r\"
-    expect \"#\"
-    send \"${SHOWRUN}\r\"
-    expect \"#\"
-    send \"${SHVER}\r\"
-    expect \"#\"
-    send \"${SHSYS}\r\"
-    expect \"#\"
-    send \"${END}\r\" ; sleep 1
-    expect eof
-    " > ${IP}_${MODEL}_${DATE}.log
-  else
-    ${MODEL} > unknownmodel_${DATE}.log
+      expect -c "
+      spawn telnet ${IP}
+      expect \"login:\"
+      send \"${USERNAME}\r\"
+      expect \"Password:\"
+      send \"${PASSWORD}\r\"
+      expect \">\"
+      send \"${EN}\r\"
+      expect \"Password:\"
+      send \"${ENABLE}\r\"
+      expect \"#\"
+      send \"${TERLEN}\r\"
+      expect \"#\"
+      send \"${SHOWRUN}\r\"
+      expect \"#\"
+      send \"${SHVER}\r\"
+      expect \"#\"
+      send \"${SHSYS}\r\"
+      expect \"#\"
+      send \"${END}\r\" ; sleep 1
+      expect eof
+      " > ${IP}_${MODEL}_${DATE}.log
+    else
+      ${MODEL} > unknownmodel_${DATE}.log
 
+    fi
   fi
-fi
 done < ${HOSTS}
 else
 echo "File is not exist!"
