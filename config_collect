@@ -1,9 +1,9 @@
 #!/bin/bash
 #ver0.1作成(191222)
-#収集リストを定義するホストリストファイル(hosts.csv)が必要
-#カンマ区切りで次のように記載{IP,MODEL,USERNAME,PASSWORD,ENABLE_PASSWORD}
-#収集するコマンドをモデルごとに定義するモデルリスト(モデル名.csv)が必要
-#1行ごとに投入したいコマンドを羅列。
+#対応デバイスはalaxala,yamaha,ios
+#収集リストを定義するホストリストファイル(hosts.csv)が必要。カンマ区切りで次のように記載{IP,MODEL,USERNAME,PASSWORD,ENABLE_PASSWORD}
+#ping疎通のない装置はskipリストに書き出す。
+#不明なデバイス名は不明デバイスリストに書き出す。
 
 hosts="hosts.csv"
 today=`date "+%Y%m%d"`
