@@ -1,84 +1,109 @@
 #!/bin/bash
+#ver0.1作成(191222)
+#収集リストを定義するホストリストファイル(hosts.csv)が必要
+#カンマ区切りで次のように記載{IP,MODEL,USERNAME,PASSWORD,ENABLE_PASSWORD}
+#収集するコマンドをモデルごとに定義するモデルリスト(モデル名.csv)が必要
+#1行ごとに投入したいコマンドを羅列。
 
-HOSTS="hosts.csv"
-DATE=`date "+%Y%m%d"`
+hosts="hosts.csv"
+today=`date "+%Y%m%d"`
 rm -rf skip_*.csv
 
-if [ -e ${HOSTS} ]; then
-  while read row; do
-  IP=`echo ${row} | cut -d , -f 1`
-  MODEL=`echo ${row} | cut -d , -f 2`
-  USERNAME=`echo ${row} | cut -d , -f 3`
-  PASSWORD=`echo ${row} | cut -d , -f 4`
-  ENABLE=`echo ${row} | cut -d , -f 5`
+#ホストリスト有無の判定処理
+if [ -e ${hosts} ]; then
+  while read hostline; do
+    ipadd=`echo ${hostline} | cut -d , -f 1`
+    modelname=`echo ${hostline} | cut -d , -f 2`
+    username=`echo ${hostline} | cut -d , -f 3`
+    loginpass=`echo ${hostline} | cut -d , -f 4`
+    enablepass=`echo ${hostline} | cut -d , -f 5`
 
-  PING_CHECK=`ping -w 3 -c 1 ${IP} | grep -i "100% packet loss" | sed "s/\r//"`
+    pingcheck=`ping -w 3 -c 1 ${ipadd} | grep -i "100% packet loss" | sed "s/\r//"`
 
-  if [ -n "$PING_CHECK" ]; then
-    echo " ${IP} is stop." >> skip_${DATE}.csv
-  else
-  
-    if [ ${MODEL} = "yamaha" ]; then
-      ADMIN="administrator"
-      SHRUN="show config"
-      SHENV="show environment"
-      END="exit"
-
-      expect -c "
-      spawn telnet ${IP}
-      expect \"Username:\"
-      send \"${USERNAME}\n\"
-      expect \"Password:\"
-      send \"${PASSWORD}\n\"
-      expect \">\"
-      send \"${ADMIN}\n\"
-      expect \"Password:\"
-      send \"${PASSWORD}\n\"
-      expect \"#\"
-      send \"${SHRUN}\n\"
-      expect \"#\"
-      send \"${SHENV}\n\"
-      expect \"#\"
-      send \"${END}\n\" ; sleep 1
-      expect eof
-      " > ${IP}_${MODEL}_${DATE}.log
-
-    elif [ ${MODEL} = "alaxala" ]; then
-      EN="enable"
-      TERLEN="set terminal pager disable"
-      SHOWRUN="show running-config"
-      SHVER="show version"
-      SHSYS="show system"
-      END="exit"
-
-      expect -c "
-      spawn telnet ${IP}
-      expect \"login:\"
-      send \"${USERNAME}\r\"
-      expect \"Password:\"
-      send \"${PASSWORD}\r\"
-      expect \">\"
-      send \"${EN}\r\"
-      expect \"Password:\"
-      send \"${ENABLE}\r\"
-      expect \"#\"
-      send \"${TERLEN}\r\"
-      expect \"#\"
-      send \"${SHOWRUN}\r\"
-      expect \"#\"
-      send \"${SHVER}\r\"
-      expect \"#\"
-      send \"${SHSYS}\r\"
-      expect \"#\"
-      send \"${END}\r\" ; sleep 1
-      expect eof
-      " > ${IP}_${MODEL}_${DATE}.log
+    #pingでホストへの疎通性を確認する処理、応答なければskipリストにIPを記載する。
+    if [ -n "$pingcheck" ]; then 
+      echo "${ipadd}" >> skip_${today}.csv
     else
-      ${MODEL} > unknownmodel_${DATE}.log
+    #モデル定義があるかの処理
+      if [ ${modelname} = "yamaha" ]; then
+      expect -c "
+        spawn telnet ${ipadd}
+        expect \"Username:\"
+        send  \"${username}\n\"
+        expect \"Password:\"
+        send \"${loginpass}\n\"
+        expect \">\"
+        send \"administrator\n\"
+        expect \"Password:\"
+        send \"${enablepass}\n\"
+        expect \"#\"
+        send \"show config\n\"
+        expect \"#\"
+        send \"show environment\n\"
+        expect \"#\"
+        send \"exit\n\" ; sleep 1
+        expect eof
+        " > ${ipadd}_${modelname}_${today}.log
+        
+      elif [ ${modelname} = "alaxala" ]; then
+      expect -c "
+        spawn telnet ${ipadd}
+        expect \"login:\"
+        send  \"${username}\r\"
+        expect \"Password:\"
+        send \"${loginpass}\r\"
+        expect \">\"
+        send \"enable\r\"
+        expect \"Password:\"
+        send \"${enablepass}\r\"
+        expect \"#\"
+        send \"set terminal pager disable\r\"
+        expect \"#\"
+        send \"show running-config\r\"
+        expect \"#\"
+        send \"show version\r\"
+        expect \"#\"
+        send \"show system\r\"
+        expect \"#\"
+        send \"show environment\r\"
+        expect \"#\"
+        send \"exit\r\" ; sleep 1
+        expect eof
+        " > ${ipadd}_${modelname}_${today}.log
+
+      elif [ ${modelname} = "ios" ]; then
+      expect -c "
+        spawn telnet ${ipadd}
+        expect \"Username:\"
+        send  \"${username}\n\"
+        expect \"Password:\"
+        send \"${loginpass}\n\"
+        expect \">\"
+        send \"enable\n\"
+        expect \"Password:\"
+        send \"${enablepass}\n\"
+        expect \"#\"
+        send \"terminal length 0\n\"
+        expect \"#\"
+        send \"show running-config\n\"
+        expect \"#\"
+        send \"show version\n\"
+        expect \"#\"
+        send \"show inventory\n\"
+        expect \"#\"
+        send \"exit\n\" ; sleep 1
+        expect eof
+        " > ${ipadd}_${modelname}_${today}.log
+
+      else
+      #定義されてないモデルは不明モデルリストに書き出す。
+      echo ${modelname} > unknownmodel_${today}.log
+        
+      fi
 
     fi
-  fi
-done < ${HOSTS}
+  done < ${hosts}
+
 else
-echo "File is not exist!"
+  echo "Hostlistfile is not exist!" >&2
 fi
